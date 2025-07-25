@@ -124,7 +124,7 @@ class AISDataset(Dataset):
         seqlen = min(len(m_v), self.max_seqlen)
         
         # Prepare density sequence for encoder input
-        density_seq = np.zeros((self.max_seqlen, 3, self.radius*2+1, self.radius*2+1), dtype=np.float32) # (maxlen, 3, 3)
+        density_seq = np.zeros((self.max_seqlen, self.radius*2+1, self.radius*2+1), dtype=np.float32) # (maxlen, 3, 3)
         for i in range(seqlen):
             lat, lon = m_v[i,0], m_v[i,1] # Use original lat/lon from trajectory for density lookup
             # Convert normalized lat/lon back to original range for density lookup
@@ -133,29 +133,9 @@ class AISDataset(Dataset):
             
             window = self.get_local_density_window(original_lat, original_lon, self.radius)
             
-             # 1) 실제 위경도 → 패딩 전 인덱스
-            lat_idx, lon_idx = self._latlon_to_idx(original_lat, original_lon)
-            # 2) 패딩 위치로 이동
-            lat_p, lon_p = lat_idx + self.pad_width, lon_idx + self.pad_width
-            i_range = np.arange(lat_p - self.radius, lat_p + self.radius + 1)  # shape = (2r+1,)
-            j_range = np.arange(lon_p - self.radius, lon_p + self.radius + 1)  # shape = (2r+1,)
 
-            # 3) meshgrid 로 (2r+1, 2r+1) 배열 만들기
-            #    mesh_i[i,j] = i_range[i], mesh_j[i,j] = j_range[j]
-            mesh_i, mesh_j = np.meshgrid(i_range, j_range, indexing='ij')  
-            # 둘 다 shape = (2r+1, 2r+1)
-            
-            # 1) grid 인덱스를 실제 위·경도로 변환
-            lat_vals = self.lat_min + mesh_i * self.density_map_lat_res   # shape = (ws, ws)
-            lon_vals = self.lon_min + mesh_j * self.density_map_lon_res
-            
-            # 2) [0,1] 사이로 정규화 (optional)
-            lat_n = (lat_vals - self.lat_min) / (self.lat_max - self.lat_min)
-            lon_n = (lon_vals - self.lon_min) / (self.lon_max - self.lon_min)
-
-            density_seq[i, 0, :, :] = window 
-            density_seq[i, 1, :, :] = lat_n  
-            density_seq[i, 2, :, :] = lon_n 
+            density_seq[i] = window 
+ 
             
 
         encoder_input_density = torch.tensor(density_seq, dtype=torch.float32)
@@ -290,7 +270,7 @@ class AISDataset_grad(Dataset):
         seqlen = min(len(m_v), self.max_seqlen)
 
         # Prepare density sequence for encoder input
-        density_seq = np.zeros((self.max_seqlen, 3, self.radius*2+1, self.radius*2+1), dtype=np.float32) # (maxlen, 3, 3)
+        density_seq = np.zeros((self.max_seqlen, self.radius*2+1, self.radius*2+1), dtype=np.float32) # (maxlen, 3, 3)
         for i in range(seqlen):
             lat, lon = m_v[i,0], m_v[i,1] # Use original lat/lon from trajectory for density lookup
             # Convert normalized lat/lon back to original range for density lookup
@@ -298,30 +278,9 @@ class AISDataset_grad(Dataset):
             original_lon = lon * (self.lon_max - self.lon_min) + self.lon_min if self.lon_max and self.lon_min else lon
             
             window = self.get_local_density_window(original_lat, original_lon, self.radius)
-            
-             # 1) 실제 위경도 → 패딩 전 인덱스
-            lat_idx, lon_idx = self._latlon_to_idx(original_lat, original_lon)
-            # 2) 패딩 위치로 이동
-            lat_p, lon_p = lat_idx + self.pad_width, lon_idx + self.pad_width
-            i_range = np.arange(lat_p - self.radius, lat_p + self.radius + 1)  # shape = (2r+1,)
-            j_range = np.arange(lon_p - self.radius, lon_p + self.radius + 1)  # shape = (2r+1,)
 
-            # 3) meshgrid 로 (2r+1, 2r+1) 배열 만들기
-            #    mesh_i[i,j] = i_range[i], mesh_j[i,j] = j_range[j]
-            mesh_i, mesh_j = np.meshgrid(i_range, j_range, indexing='ij')  
-            # 둘 다 shape = (2r+1, 2r+1)
-            
-            # 1) grid 인덱스를 실제 위·경도로 변환
-            lat_vals = self.lat_min + mesh_i * self.density_map_lat_res   # shape = (ws, ws)
-            lon_vals = self.lon_min + mesh_j * self.density_map_lon_res
-            
-            # 2) [0,1] 사이로 정규화 (optional)
-            lat_n = (lat_vals - self.lat_min) / (self.lat_max - self.lat_min)
-            lon_n = (lon_vals - self.lon_min) / (self.lon_max - self.lon_min)
+            density_seq[i] = window 
 
-            density_seq[i, 0, :, :] = window 
-            density_seq[i, 1, :, :] = lat_n
-            density_seq[i, 2, :, :] = lon_n
 
         encoder_input_density = torch.tensor(density_seq, dtype=torch.float32)
 

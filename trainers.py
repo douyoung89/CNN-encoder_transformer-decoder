@@ -182,6 +182,7 @@ class Trainer:
                                 num_workers=config.num_workers)
 
             losses = []
+            
             n_batches = len(loader)
             pbar = tqdm(enumerate(loader), total=len(loader)) if is_train else enumerate(loader)
             d_loss, d_reg_loss, d_n = 0, 0, 0
@@ -192,7 +193,7 @@ class Trainer:
                 # masks = masks[:, :-1].to(self.device)
                 
                 # place data on the correct device
-                encoder_input_density = encoder_input_density.squeeze(-1).long().to(self.device) # (B, T)
+                encoder_input_density = encoder_input_density.to(self.device) # (B, T)
                 seqs = decoder_input_seq_padded.to(self.device) # (B, T, 4)
                 decoder_target_seq_padded = decoder_target_seq_padded.to(self.device) # (B, T, 4)
                 masks = mask[:, :-1].to(self.device) # Mask for decoder targets, assuming last token is not masked for target
@@ -311,7 +312,7 @@ class Trainer:
             n_plots = 7
             init_seqlen = INIT_SEQLEN
             seqs_init = seqs[:n_plots, :init_seqlen, :].to(self.device)
-            encoder_input_density_sample = encoder_input_density_batch[:n_plots].squeeze(-1).long().to(self.device)
+            encoder_input_density_sample = encoder_input_density_batch[:n_plots].to(self.device)
             self.encoder_model.eval() # Ensure encoder is in eval mode for sampling
             encoder_output_sample = self.encoder_model(encoder_input_density_sample)
             self.encoder_model.train() # Set back to train mode if training continues

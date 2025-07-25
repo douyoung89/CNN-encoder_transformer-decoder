@@ -39,7 +39,8 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import Dataset, DataLoader
 from encoder import Encoder
-import models, trainers, datasets, utils
+import models, trainers, utils
+import datasets2 as datasets
 from config_trAISformer import Config
 
 cf = Config()
@@ -152,7 +153,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         for it, (encoder_input_density, seqs, decoder_target_seq_padded, masks, seqlens, mmsis, time_starts) in pbar:
             seqs_init = seqs[:, :init_seqlen, :].to(cf.device)
-            encoder_input_density = encoder_input_density.squeeze(-1).long().to(device) # (B, T)
+            encoder_input_density = encoder_input_density.to(device) # (B, T)
             # Perform encoder forward pass once per batch
             encoder_output = encoder_model(encoder_input_density) # (B, T, n_embd)
             masks = masks[:, :max_seqlen].to(cf.device)

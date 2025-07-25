@@ -25,9 +25,9 @@ class Config():
     retrain = True
     tb_log = False
     device = torch.device("cuda:0")
-#     device = torch.device("cpu")
+#   device = torch.device("cpu")
     
-    max_epochs = 50
+    max_epochs = 20
     batch_size = 32
     n_samples = 16
     
@@ -117,7 +117,8 @@ class Config():
         + f"-head-{n_head}-{n_layer}"\
         + f"-bs-{batch_size}"\
         + f"-lr-{learning_rate}"\
-        + f"-seqlen-{init_seqlen}-{max_seqlen}"
+        + f"-seqlen-{init_seqlen}-{max_seqlen}"\
+        + f"transformer_3D_cnn"
     savedir = "./results/"+filename+"/"
     
     ckpt_path = os.path.join(savedir,"model.pt")   
