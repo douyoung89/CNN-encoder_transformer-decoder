@@ -40,7 +40,8 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import Dataset, DataLoader
 from encoder import Encoder
 import models, trainers, utils
-import datasets2 as datasets
+# import datasets2 as datasets
+import datasets
 from config_trAISformer import Config
 
 cf = Config()
@@ -144,7 +145,7 @@ if __name__ == "__main__":
 
     v_ranges = torch.tensor([model.lat_range, model.lon_range, 0, 0]).to(cf.device)
     v_roi_min = torch.tensor([model.lat_min, model.lon_min, 0, 0]).to(cf.device)
-    max_seqlen = init_seqlen + 6 * 4
+    max_seqlen = init_seqlen + 6 * 17 # # 17h 
 
     encoder_model.eval() 
     model.eval()
@@ -185,6 +186,17 @@ if __name__ == "__main__":
     min_errors = torch.cat(l_min, dim=0) * m_masks
     pred_errors = min_errors.sum(dim=0) / m_masks.sum(dim=0)
     pred_errors = pred_errors.detach().cpu().numpy()
+    
+    
+    save_path = os.path.join(cf.savedir, "pred_errors.csv")
+    # 헤더를 넣고 싶지 않다면 header=""로 두시면 됩니다.
+    np.savetxt(save_path,
+           pred_errors,
+           delimiter=",",
+           header="pred_error",
+           comments="")  # comments=""로 '#' 문자를 없앱니다.
+
+    print(f"Prediction errors saved to {save_path}")
 
     ## Plot
     # ===============================

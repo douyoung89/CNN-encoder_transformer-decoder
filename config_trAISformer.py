@@ -22,7 +22,7 @@ import torch
 
 
 class Config():
-    retrain = True
+    retrain = False 
     tb_log = False
     device = torch.device("cuda:0")
 #   device = torch.device("cpu")
@@ -118,7 +118,7 @@ class Config():
         + f"-bs-{batch_size}"\
         + f"-lr-{learning_rate}"\
         + f"-seqlen-{init_seqlen}-{max_seqlen}"\
-        + f"transformer_3D_cnn"
+        + f"transformer_3D_cnn_3ch"
     savedir = "./results/"+filename+"/"
     
     ckpt_path = os.path.join(savedir,"model.pt")   

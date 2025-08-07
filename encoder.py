@@ -16,7 +16,7 @@ class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
         mid_ch = config.n_embd // 2
-        in_ch  = 1  # now density + lat + lon
+        in_ch  = 3  # now density + lat + lon
 
         # 1) 두 스텝의 Conv→GELU
         #    (원하면 더 쌓아도 되고, kernel_size=3을 써도 됩니다)
@@ -29,13 +29,13 @@ class Encoder(nn.Module):
             nn.BatchNorm3d(mid_ch),
             nn.GELU(),
             
-            nn.Conv3d(mid_ch, mid_ch, kernel_size=(3,3,3), padding=(1,1,1)),  # H,W 유지 → n_embd
-            nn.BatchNorm3d(mid_ch),
-            nn.GELU(),
-            
             nn.Conv3d(mid_ch, config.n_embd, kernel_size=(3,3,3), padding=(1,1,1)),  # H,W 유지 → n_embd
             nn.BatchNorm3d(config.n_embd),
             nn.GELU(),
+            
+            # nn.Conv3d(mid_ch, config.n_embd, kernel_size=(3,3,3), padding=(1,1,1)),  # H,W 유지 → n_embd
+            # nn.BatchNorm3d(config.n_embd),
+            # nn.GELU(),
             # nn.Conv2d(mid_ch, config.n_embd, kernel_size=3, padding=1),  # H,W 유지 → n_embd
             # nn.GELU(),
         )
@@ -68,30 +68,32 @@ class Encoder(nn.Module):
         Returns:
             (batch, seq_len, n_embd)
         """
-        # b, t, C, H, W = x.size()
-        # # → (B, C, T, H, W)
-        # x = density.permute(0, 2, 1, 3, 4).contiguous()
+        # 3 ch -------------
+        b, t, C, H, W = x.size()
+        # → (B, C, T, H, W)
+        x = x.permute(0, 2, 1, 3, 4).contiguous()
         
-        # # 3D CNN + spatial pooling
-        # # x: (B, n_embd, T, 1, 1)
-        # x = self.cnn(x)
-        # x = self.pool(x)
-
-        # # → (B, T, n_embd)
-        # x = x.squeeze(-1).squeeze(-1)       # (B, n_embd, T)
-        # x = x.permute(0, 2, 1).contiguous() # (B, T, n_embd)
-
-        # # add positional, drop, then transformer
-        # pos = self.pos_emb[:, :t, :]        # (1, T, n_embd)
-        # x = self.drop(x + pos)
-        
-        
-        b, t, H, W = x.size()
-        x = x.unsqueeze(1) # b, 1, t, h, w
+        # 3D CNN + spatial pooling
+        # x: (B, n_embd, T, 1, 1)
         x = self.cnn(x)
-        x = self.pool(x) # (B, n_embd, T, 1, 1)
+        x = self.pool(x)
+
+        # → (B, T, n_embd)
         x = x.squeeze(-1).squeeze(-1)       # (B, n_embd, T)
         x = x.permute(0, 2, 1).contiguous() # (B, T, n_embd)
+
+        # add positional, drop, then transformer
         pos = self.pos_emb[:, :t, :]        # (1, T, n_embd)
         x = self.drop(x + pos)
+        
+        
+        # 1ch ----------------------
+        # b, t, H, W = x.size()
+        # x = x.unsqueeze(1) # b, 1, t, h, w
+        # x = self.cnn(x)
+        # x = self.pool(x) # (B, n_embd, T, 1, 1)
+        # x = x.squeeze(-1).squeeze(-1)       # (B, n_embd, T)
+        # x = x.permute(0, 2, 1).contiguous() # (B, T, n_embd)
+        # pos = self.pos_emb[:, :t, :]        # (1, T, n_embd)
+        # x = self.drop(x + pos)
         return x       # (B, T, n_embd)
